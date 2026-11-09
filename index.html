@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prix Hyping</title>
+<meta name="description" content="Prix de rachat du /sell sur Hyping, relevés chaque heure : prix, ventes du serveur, métiers, tendances, calculateur de vente.">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+<script>
+  // thème choisi avec le bouton du haut (sinon celui de l'appareil), appliqué avant l'affichage
+  try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
+</script>
+</head>
+<body>
+<header class="haut">
+  <div class="haut-in">
+    <div class="haut-gauche">
+    <a class="logo" href="#/">
+      <img class="logo-carre" src="logo.png" alt="" width="52" height="52">
+      <span><b>Prix Hyping</b><small id="serveur">marché du /sell</small></span>
+    </a>
+    <nav class="menu" aria-label="Menu">
+      <a href="#/" id="nav-marche">Marché</a>
+      <a href="#/favoris" id="nav-favoris">Favoris <span id="nb-favoris"></span></a>
+    </nav>
+    </div>
+    <div class="haut-droite">
+    <button type="button" id="btn-theme" class="bouton bouton-theme" aria-label="Passer en mode sombre" title="Mode sombre / clair">☾</button>
+    <div class="mes-bonus">
+      <button type="button" id="btn-bonus" class="bouton">Mes bonus <span id="resume-bonus"></span></button>
+      <label class="interrupteur"><input type="checkbox" role="switch" id="avec-bonus"> <span>Prix avec mes bonus</span></label>
+    </div>
+    <div class="recherche">
+      <label for="recherche" class="invisible">Chercher un objet</label>
+      <input id="recherche" type="search" placeholder="Chercher un objet (blé, diamant…)" autocomplete="off"
+             role="combobox" aria-expanded="false" aria-controls="suggestions" aria-autocomplete="list">
+      <div id="suggestions" class="suggestions" role="listbox" hidden></div>
+    </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="vue-accueil">
+    <section id="fraicheur" class="bandeau" aria-label="Fraîcheur des données">Chargement…</section>
+    <section id="infos" class="infos" aria-label="Infos du serveur" hidden></section>
+    <div class="option-simples">
+      <label class="interrupteur"><input type="checkbox" role="switch" id="seul-simples"> <span><b>Bruts et faciles seulement</b>
+        <small>récolte, minage, pêche, mobs, ou une seule étape : un craft, une cuisson, deux matériaux simples</small></span></label>
+    </div>
+    <section id="cartes" class="cartes" aria-label="Classements" hidden></section>
+
+    <section id="tableau" class="panneau" aria-label="Tous les objets">
+      <div class="panneau-tete">
+        <h2 id="titre-tableau">Tous les objets</h2>
+        <label class="case"><input id="seul-favoris" type="checkbox"> Mes favoris seulement</label>
+      </div>
+      <div id="metier" class="puces" role="group" aria-label="Métier" data-valeur=""></div>
+      <div class="filtres">
+        <select id="categorie" aria-label="Catégorie"></select>
+        <select id="vente" aria-label="Ventes">
+          <option value="">Toutes les ventes</option>
+          <option value="jour">Vendus aujourd'hui</option>
+          <option value="semaine">Vendus cette semaine</option>
+          <option value="jamais">Jamais vendus (7 j)</option>
+          <option value="monte">Vendus 2× plus que d'habitude</option>
+        </select>
+        <div class="tri">
+          <select id="tri" aria-label="Trier par"></select>
+          <button id="sens" type="button" aria-label="Inverser l'ordre">↓</button>
+        </div>
+        <button id="raz" type="button" class="discret">Tout effacer</button>
+      </div>
+      <p id="compte" class="compte"></p>
+      <div class="defile">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-fav"><span class="invisible">Favori</span></th>
+              <th data-tri="nom">Objet <span class="fleche"></span></th>
+              <th class="num" data-tri="prix">Prix <span class="fleche"></span></th>
+              <th class="num cache-mobile" data-tri="var1" title="Variation depuis le relevé d'avant">1 h <span class="fleche"></span></th>
+              <th class="num" data-tri="var24" id="th-var24">24 h <span class="fleche"></span></th>
+              <th class="num cache-mobile" data-tri="tend" title="Tendance sur 7 jours affichée par le menu du /sell">7 j <span class="fleche"></span></th>
+              <th class="num" data-tri="vj" title="Vendus aujourd'hui par tout le serveur (au moment du scan)">Vendus <span class="fleche"></span></th>
+              <th class="num cache-mobile" data-tri="v7" title="Vendus sur 7 jours par tout le serveur">7 j <span class="fleche"></span></th>
+              <th class="num cache-mobile" data-tri="coffreB" title="Baisse du prix si on vend un double coffre (3 456) d'un coup">Coffre <span class="fleche"></span></th>
+              <th class="cache-mobile">Courbe</th>
+            </tr>
+          </thead>
+          <tbody id="lignes"></tbody>
+        </table>
+      </div>
+      <button id="plus" class="plus" type="button" hidden>Afficher plus</button>
+      <p class="note">« Peu échangé » : moins de 100 ventes en 7 jours, le prix est indicatif.</p>
+    </section>
+  </div>
+
+  <div id="vue-objet" hidden></div>
+</main>
+
+<footer class="bas">
+  Prix relevés chaque heure (<code>/sell export</code>) par les joueurs contributeurs : une heure sans
+  contributeur connecté = pas de mise à jour. Ventes, catégories et métiers : lus dans le menu
+  « Prix des ressources » du <code>/sell</code> quand un contributeur le scanne. Favoris et bonus de métier
+  restent dans ton navigateur. Site non officiel.
+</footer>
+<dialog id="dialogue-bonus" class="dialogue" aria-labelledby="titre-bonus">
+  <form method="dialog">
+    <h2 id="titre-bonus">Mes bonus de vente</h2>
+    <p class="note">Tels qu'affichés en jeu. Ils restent dans ton navigateur, rien n'est envoyé.</p>
+    <label for="bonus-prestige">Bonus prestige (%) <small>tous les objets</small></label>
+    <input id="bonus-prestige" type="number" min="0" step="1" inputmode="numeric" data-bonus="prestige">
+    <div id="bonus-metiers" class="grille-bonus"></div>
+    <p id="exemple-bonus" class="exemple"></p>
+    <p class="note">Le serveur multiplie les deux : prix × (1 + prestige) × (1 + métier). Un objet de deux
+      métiers prend ton meilleur bonus des deux ; un objet sans métier, le prestige seul.</p>
+    <div class="actions-dialogue"><button class="bouton principal" value="ok">Fermer</button></div>
+  </form>
+</dialog>
+<div id="bulle" class="bulle" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
